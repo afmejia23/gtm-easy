@@ -3,7 +3,7 @@ import {
   Order,
   PixelMessage,
   ProductOrder,
-  Impression,
+  // Impression,
   CartItem,
 } from '../typings/events'
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
@@ -13,12 +13,16 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
     case 'vtex:productView': {
       const { selectedSku, productName, brand, categories } = e.data.product
 
-      let price
+      let price, listPrice, commertialOffer
 
       try {
-        price = e.data.product.items[0].sellers[0].commertialOffer.Price
+        commertialOffer = e.data.product.items[0].sellers[0].commertialOffer
+        price = commertialOffer.Price
+        listPrice = commertialOffer.ListPrice
       } catch {
         price = undefined
+        listPrice = undefined
+        commertialOffer = undefined
       }
 
       const data = {
@@ -32,6 +36,9 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
                 name: productName,
                 variant: selectedSku.name,
                 price,
+                listPrice,
+                discount: `${getDiscount(commertialOffer)}%`,
+                list: `PLP Category: ${getCategory(categories)}`,
               },
             ],
           },
@@ -48,12 +55,16 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
       const { productName, brand, categories, sku } = e.data.product
       const list = e.data.list ? { actionField: { list: e.data.list } } : {}
 
-      let price
+      let price, listPrice, commertialOffer
 
       try {
-        price = e.data.product.items[0].sellers[0].commertialOffer.Price
+        commertialOffer = e.data.product.items[0].sellers[0].commertialOffer
+        price = commertialOffer.Price
+        listPrice = commertialOffer.ListPrice
       } catch {
         price = undefined
+        listPrice = undefined
+        commertialOffer = undefined
       }
 
       const data = {
@@ -69,6 +80,9 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
                 name: productName,
                 variant: sku.name,
                 price,
+                listPrice,
+                discount: `${getDiscount(commertialOffer)}%`,
+                list: `${getCategory(categories)}`,
               },
             ],
           },
@@ -91,7 +105,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
               category: sku.category,
               id: sku.skuId,
               name: sku.name,
-              price: `${sku.price}`,
+              price: sku.price / 100,
               quantity: sku.quantity,
               variant: sku.variant,
             })),
@@ -99,6 +113,24 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
           currencyCode: e.data.currency,
         },
         event: 'addToCart',
+      })
+
+      push({
+        ecommerce: {
+          click: {
+            products: items.map((sku: any) => ({
+              brand: sku.brand,
+              category: sku.category,
+              id: sku.skuId,
+              name: sku.name,
+              price: sku.price / 100,
+              quantity: sku.quantity,
+              variant: sku.variant,
+            })),
+          },
+          currencyCode: e.data.currency,
+        },
+        event: 'productClick',
       })
 
       return
@@ -147,7 +179,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
         ecommerce,
       })
 
-      // Backwards compatible event
+      // Backwards compatible eventimport { ApolloQueryResult } from 'apollo-client'
       push({
         ecommerce,
         event: 'pageLoaded',
@@ -157,13 +189,14 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
     }
 
     case 'vtex:productImpression': {
-      const { currency, list, impressions, product, position } = e.data
+      const { currency, impressions, product, position } = e.data
+
       let oldImpresionFormat: Record<string, any> | null = null
 
       if (product != null && position != null) {
         // make it backwards compatible
         oldImpresionFormat = [
-          getProductImpressionObjectData(list)({
+          getProductImpressionObjectData()({
             product,
             position,
           }),
@@ -171,7 +204,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
       }
 
       const parsedImpressions = (impressions || []).map(
-        getProductImpressionObjectData(list)
+        getProductImpressionObjectData()
       )
 
       push({
@@ -179,7 +212,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
         ecommerce: {
           currencyCode: currency,
           impressions: oldImpresionFormat || parsedImpressions,
-          demoField: 'Funciona porfa!!',
         },
       })
 
@@ -275,16 +307,35 @@ function removeStartAndEndSlash(category?: string) {
   return category?.replace(/^\/|\/$/g, '')
 }
 
-function getProductImpressionObjectData(list: string) {
-  return ({ product, position }: Impression) => ({
+function getDiscount(commertialOffer: any) {
+  const previousPriceValue = commertialOffer.ListPrice
+  const newPriceValue = commertialOffer.Price
+  const savingsValue = previousPriceValue - newPriceValue
+  const savingsPercentage = Math.round(
+    (savingsValue / previousPriceValue) * 100
+  )
+
+  return savingsPercentage
+}
+
+function getSAPSpecs(specs: any[]) {
+  const found = specs.find(elem => elem.name === 'Campos SAP')
+  return found
+}
+
+function getProductImpressionObjectData() {
+  return ({ product, position }: any) => ({
     brand: product.brand,
     category: getCategory(product.categories),
     id: product.sku.itemId,
-    list,
+    list: getCategory(product.categories),
     name: product.productName,
     position,
     price: `${product.sku.seller!.commertialOffer.Price}`,
     variant: product.sku.name,
+    listPrice: `${product.sku.seller!.commertialOffer.ListPrice}`,
+    discount: `${getDiscount(product.sku.seller!.commertialOffer)}%`,
+    SAPSection: getSAPSpecs(product.specificationGroups),
   })
 }
 

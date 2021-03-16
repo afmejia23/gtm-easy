@@ -1,7 +1,5 @@
 import push from './push'
-import {
-  PixelMessage, SearchPageInfoData,
-} from '../typings/events'
+import { PixelMessage, SearchPageInfoData } from '../typings/events'
 
 export function sendLegacyEvents(e: PixelMessage) {
   switch (e.data.eventName) {
@@ -42,7 +40,46 @@ export function sendLegacyEvents(e: PixelMessage) {
 
         case 'emptySearchView':
         case 'internalSiteSearchView': {
-          const data = e.data as SearchPageInfoData
+          const data = e.data
+
+          if (
+            data.search &&
+            data.search.results > 0 &&
+            !data.search.correction
+          ) {
+            push({
+              event: 'interaccion',
+              category: 'Busqueda',
+              action: 'Con resultados',
+              tag: data.search?.term,
+            })
+          }
+
+          if (
+            data.search &&
+            !(data.search.results > 0) &&
+            !data.search.correction
+          ) {
+            push({
+              event: 'interaccion',
+              category: 'Busqueda',
+              action: 'Sin resultados',
+              tag: data.search?.term,
+            })
+          }
+
+          if (
+            data.search &&
+            data.search.results > 0 &&
+            data.search.correction
+          ) {
+            push({
+              event: 'interaccion',
+              category: 'Search Autocorrection',
+              action: 'Termino corregido',
+              tag: data.search?.term,
+            })
+          }
 
           push({
             event: 'internalSiteSearchView',
