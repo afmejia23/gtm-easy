@@ -10,12 +10,14 @@ export default function() {
   return null
 }
 
-export function handleEvents(e: any) {
-  sendEnhancedEcommerceEvents(e)
+export function handleEvents(e: any, a: any) {
+  sendEnhancedEcommerceEvents(e, a.location.pathname)
   sendExtraEvents(e)
   sendLegacyEvents(e)
 }
 
 if (canUseDOM) {
-  window.addEventListener('message', handleEvents)
+  window.addEventListener('message', e => {
+    handleEvents(e, window)
+  })
 }

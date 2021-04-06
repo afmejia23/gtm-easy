@@ -42,44 +42,20 @@ export function sendLegacyEvents(e: PixelMessage) {
         case 'internalSiteSearchView': {
           const data = e.data
 
-          if (
-            data.search &&
-            data.search.results > 0 &&
-            !data.search.correction
-          ) {
-            push({
-              event: 'interaccion',
-              category: 'Busqueda',
-              action: 'Con resultados',
-              tag: data.search?.term,
-            })
-          }
-
-          if (
-            data.search &&
-            !(data.search.results > 0) &&
-            !data.search.correction
-          ) {
-            push({
-              event: 'interaccion',
-              category: 'Busqueda',
-              action: 'Sin resultados',
-              tag: data.search?.term,
-            })
-          }
-
-          if (
-            data.search &&
-            data.search.results > 0 &&
-            data.search.correction
-          ) {
-            push({
-              event: 'interaccion',
-              category: 'Search Autocorrection',
-              action: 'Termino corregido',
-              tag: data.search?.term,
-            })
-          }
+          push({
+            event: 'interaccion',
+            category:
+              data.search.correction.misspelled && data.search.results > 0
+                ? 'Search Autocorrection'
+                : 'Busqueda',
+            action:
+              data.search.results > 0
+                ? data.search.correction.misspelled
+                  ? 'Termino corregido'
+                  : 'Con resultados'
+                : 'Sin resultados',
+            tag: data.search?.term,
+          })
 
           push({
             event: 'internalSiteSearchView',

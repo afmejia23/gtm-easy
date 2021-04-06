@@ -8,7 +8,41 @@ import {
 } from '../typings/events'
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
 
-export function sendEnhancedEcommerceEvents(e: PixelMessage) {
+export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
+  function checkCenco(promo: any) {
+    if (promo?.split(' ')[0].split('_').length > 2) return true
+    else return false
+  }
+
+  function calculateCencoPrice(name: any, listPrice: any) {
+    const mechanic = name?.split(' ')[0].split('_')[0]
+    const value = parseInt(name?.split(' ')[0].split('_')[1])
+
+    switch (mechanic) {
+      case 'D':
+        return listPrice * ((100 - value) / 100)
+      case 'PF':
+        return value
+      default:
+        return null
+    }
+  }
+
+  let list = ''
+  const words = pathname.split('/')
+  const currentSearch = window.location.search
+
+  // Define list value
+  if (pathname === '/') {
+    list = 'HOME Carrusel: '
+  } else if (words[words.length - 1] === 'p') {
+    list = 'PDP recommendations: '
+  } else if (currentSearch) {
+    list = 'PLP Search: '
+  } else {
+    list = 'PLP category: '
+  }
+
   switch (e.data.eventName) {
     case 'vtex:productView': {
       const { selectedSku, productName, brand, categories } = e.data.product
@@ -44,6 +78,110 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
           },
         },
         event: 'productDetail',
+      }
+
+      push(data)
+
+      return
+    }
+
+    case 'myProductClickEvent': {
+      const product = e.data.data.Product
+
+      const { productName, brand, categories, sku } = product
+      // const list = e.data.list ? { actionField: { list: e.data.list } } : {}
+
+      let price, listPrice, commertialOffer, promotion, cencoPrice
+
+      try {
+        commertialOffer = product.items[0].sellers[0].commertialOffer
+        promotion = commertialOffer?.teasers[0]?.name
+        price = commertialOffer.Price
+        listPrice = commertialOffer.ListPrice
+        const isCenco = promotion ? checkCenco(promotion) : false
+
+        if (isCenco) {
+          cencoPrice = calculateCencoPrice(promotion, listPrice)
+        } else {
+          cencoPrice = listPrice
+        }
+      } catch {
+        price = undefined
+        listPrice = undefined
+        commertialOffer = undefined
+      }
+
+      const data = {
+        event: 'newProductClick',
+        ecommerce: {
+          click: {
+            // ...list,
+            products: [
+              {
+                brand,
+                category: getCategory(categories),
+                id: sku.itemId,
+                name: productName,
+                variant: sku.name,
+                price,
+                listPrice,
+                cencoPrice,
+                discount: `${getDiscount(commertialOffer)}%`,
+                list: `${list}${getCategory(categories)}`,
+              },
+            ],
+          },
+        },
+      }
+
+      push(data)
+
+      return
+    }
+
+    case 'myProductEvent': {
+      const product = e.data.data.Product.product
+
+      let price, listPrice, commertialOffer, promotion, cencoPrice
+
+      try {
+        commertialOffer = product.items[0].sellers[0].commertialOffer
+        promotion = commertialOffer?.teasers[0]?.name
+        price = commertialOffer.Price
+        listPrice = commertialOffer.ListPrice
+        const isCenco = promotion ? checkCenco(promotion) : false
+
+        if (isCenco) {
+          cencoPrice = calculateCencoPrice(promotion, listPrice)
+        } else {
+          cencoPrice = listPrice
+        }
+      } catch {
+        price = undefined
+        listPrice = undefined
+        commertialOffer = undefined
+      }
+
+      const data = {
+        ecommerce: {
+          detail: {
+            products: [
+              {
+                brand: product?.brand,
+                category: getCategory(product?.categories),
+                id: product?.sku?.itemId,
+                name: product?.productName,
+                variant: product?.sku?.name,
+                price,
+                listPrice,
+                cencoPrice,
+                discount: `${getDiscount(commertialOffer)}%`,
+                list: `${getCategory(product?.categories)}`,
+              },
+            ],
+          },
+        },
+        event: 'newProductDetail',
       }
 
       push(data)
@@ -96,6 +234,27 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
 
     case 'vtex:addToCart': {
       const { items } = e.data
+      const words = window.location.href.split('/')
+
+      if (words[words.length - 1] !== 'p') {
+        push({
+          ecommerce: {
+            click: {
+              products: items.map((sku: any) => ({
+                brand: sku.brand,
+                category: sku.category,
+                id: sku.skuId,
+                name: sku.name,
+                price: sku.price / 100,
+                quantity: sku.quantity,
+                variant: sku.variant,
+              })),
+            },
+            currencyCode: e.data.currency,
+          },
+          event: 'productClick',
+        })
+      }
 
       push({
         ecommerce: {
@@ -113,24 +272,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
           currencyCode: e.data.currency,
         },
         event: 'addToCart',
-      })
-
-      push({
-        ecommerce: {
-          click: {
-            products: items.map((sku: any) => ({
-              brand: sku.brand,
-              category: sku.category,
-              id: sku.skuId,
-              name: sku.name,
-              price: sku.price / 100,
-              quantity: sku.quantity,
-              variant: sku.variant,
-            })),
-          },
-          currencyCode: e.data.currency,
-        },
-        event: 'productClick',
       })
 
       return
@@ -207,11 +348,19 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage) {
         getProductImpressionObjectData()
       )
 
+      // // Change value of list field
+      const impressionsWithList = (oldImpresionFormat || parsedImpressions).map(
+        function(item: any) {
+          item.list = `${list}${item.list}`
+          return item
+        }
+      )
+
       push({
         event: 'productImpression',
         ecommerce: {
           currencyCode: currency,
-          impressions: oldImpresionFormat || parsedImpressions,
+          impressions: impressionsWithList,
         },
       })
 

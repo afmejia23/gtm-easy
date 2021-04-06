@@ -4,14 +4,25 @@ import { PixelMessage } from '../typings/events'
 export function sendExtraEvents(e: PixelMessage) {
   switch (e.data.eventName) {
     case 'vtex:pageView': {
+      const page = e.data.pageUrl.replace(e.origin, '')
       if (e.data.routeId === 'store.search') {
-        push({
-          event: 'pageViewVirtual',
-          location: e.data.pageUrl,
-          page: e.data.pageUrl.replace(e.origin, ''),
-          referrer: e.data.referrer,
-          title: 'PLP - Search',
-        })
+        if (page.includes('?q=')) {
+          push({
+            event: 'pageViewVirtual',
+            location: e.data.pageUrl,
+            page,
+            referrer: e.data.referrer,
+            title: 'PLP - Search',
+          })
+        } else {
+          push({
+            event: 'pageViewVirtual',
+            location: e.data.pageUrl,
+            page,
+            referrer: e.data.referrer,
+            title: 'PLP - Category',
+          })
+        }
       }
 
       const wordsForPDP = e.data.pageUrl.split('/')
@@ -19,7 +30,7 @@ export function sendExtraEvents(e: PixelMessage) {
         push({
           event: 'pageViewVirtual',
           location: e.data.pageUrl,
-          page: e.data.pageUrl.replace(e.origin, ''),
+          page,
           referrer: e.data.referrer,
           title: 'PDP',
         })
@@ -29,7 +40,7 @@ export function sendExtraEvents(e: PixelMessage) {
         push({
           event: 'pageViewVirtual',
           location: e.data.pageUrl,
-          page: e.data.pageUrl.replace(e.origin, ''),
+          page,
           referrer: e.data.referrer,
           title: 'Home',
         })
@@ -39,7 +50,7 @@ export function sendExtraEvents(e: PixelMessage) {
         push({
           event: 'pageViewVirtual',
           location: e.data.pageUrl,
-          page: e.data.pageUrl.replace(e.origin, ''),
+          page,
           referrer: e.data.referrer,
           title: 'PLP - Category',
         })
@@ -64,9 +75,6 @@ export function sendExtraEvents(e: PixelMessage) {
     }
 
     default: {
-      push({
-        event: 'otherView',
-      })
       return
     }
   }
