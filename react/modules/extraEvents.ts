@@ -5,8 +5,12 @@ export function sendExtraEvents(e: PixelMessage) {
   switch (e.data.eventName) {
     case 'vtex:pageView': {
       const page = e.data.pageUrl.replace(e.origin, '')
-      if (e.data.routeId === 'store.search') {
-        if (page.includes('?q=')) {
+
+      if (
+        e.data.routeId === 'store.search' ||
+        e.data.routeId === 'store.search#department'
+      ) {
+        if (page.includes('?q=') || page.includes('?_q=')) {
           push({
             event: 'pageViewVirtual',
             location: e.data.pageUrl,

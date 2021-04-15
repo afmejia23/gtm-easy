@@ -44,49 +44,49 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
   }
 
   switch (e.data.eventName) {
-    case 'vtex:productView': {
-      const { selectedSku, productName, brand, categories } = e.data.product
+    // case 'vtex:productView': {
+    //   const { selectedSku, productName, brand, categories } = e.data.product
 
-      let price, listPrice, commertialOffer
+    //   let price, listPrice, commertialOffer
 
-      try {
-        commertialOffer = e.data.product.items[0].sellers[0].commertialOffer
-        price = commertialOffer.Price
-        listPrice = commertialOffer.ListPrice
-      } catch {
-        price = undefined
-        listPrice = undefined
-        commertialOffer = undefined
-      }
+    //   try {
+    //     commertialOffer = e.data.product.items[0].sellers[0].commertialOffer
+    //     price = commertialOffer.Price
+    //     listPrice = commertialOffer.ListPrice
+    //   } catch {
+    //     price = undefined
+    //     listPrice = undefined
+    //     commertialOffer = undefined
+    //   }
 
-      const data = {
-        ecommerce: {
-          detail: {
-            products: [
-              {
-                brand,
-                category: getCategory(categories),
-                id: selectedSku.itemId,
-                name: productName,
-                variant: selectedSku.name,
-                price,
-                listPrice,
-                discount: `${getDiscount(commertialOffer)}%`,
-                list: `PLP Category: ${getCategory(categories)}`,
-              },
-            ],
-          },
-        },
-        event: 'productDetail',
-      }
+    //   const data = {
+    //     ecommerce: {
+    //       detail: {
+    //         products: [
+    //           {
+    //             brand,
+    //             category: getCategory(categories),
+    //             id: selectedSku.itemId,
+    //             name: productName,
+    //             variant: selectedSku.name,
+    //             price,
+    //             listPrice,
+    //             discount: `${getDiscount(commertialOffer)}%`,
+    //             list: `PLP Category: ${getCategory(categories)}`,
+    //           },
+    //         ],
+    //       },
+    //     },
+    //     event: 'productDetail',
+    //   }
 
-      push(data)
+    //   push(data)
 
-      return
-    }
+    //   return
+    // }
 
-    case 'myProductClickEvent': {
-      const product = e.data.data.Product
+    case 'vtex:productClick': {
+      const product = e.data.product
 
       const { productName, brand, categories, sku } = product
       // const list = e.data.list ? { actionField: { list: e.data.list } } : {}
@@ -111,6 +111,15 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
         commertialOffer = undefined
       }
 
+      const termSearched = window.location.pathname.split('/')[1]
+      let listTerm
+
+      if (list === 'PLP Search: ') {
+        listTerm = `${list}${termSearched}`
+      } else {
+        listTerm = `${list}${getCategory(categories)}`
+      }
+
       const data = {
         event: 'newProductClick',
         ecommerce: {
@@ -127,7 +136,8 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
                 listPrice,
                 cencoPrice,
                 discount: `${getDiscount(commertialOffer)}%`,
-                list: `${list}${getCategory(categories)}`,
+                list: listTerm,
+                position: e.data.position,
               },
             ],
           },
@@ -140,7 +150,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
     }
 
     case 'myProductEvent': {
-      const product = e.data.data.Product.product
+      const product = e.data.data.Product
 
       let price, listPrice, commertialOffer, promotion, cencoPrice
 
@@ -162,6 +172,15 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
         commertialOffer = undefined
       }
 
+      const termSearched = window.location.pathname.split('/')[1]
+      let listTerm
+
+      if (list === 'PLP Search: ') {
+        listTerm = `${list}${termSearched}`
+      } else {
+        listTerm = `${list}${getCategory(product?.categories)}`
+      }
+
       const data = {
         ecommerce: {
           detail: {
@@ -176,7 +195,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
                 listPrice,
                 cencoPrice,
                 discount: `${getDiscount(commertialOffer)}%`,
-                list: `${getCategory(product?.categories)}`,
+                list: listTerm,
               },
             ],
           },
@@ -189,72 +208,75 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       return
     }
 
-    case 'vtex:productClick': {
-      const { productName, brand, categories, sku } = e.data.product
-      const list = e.data.list ? { actionField: { list: e.data.list } } : {}
+    // case 'vtex:productClick': {
+    //   console.log('Printing productClick Event------------>')
+    //   console.log(e)
 
-      let price, listPrice, commertialOffer
+    // const { productName, brand, categories, sku } = e.data.product
+    // const list = e.data.list ? { actionField: { list: e.data.list } } : {}
 
-      try {
-        commertialOffer = e.data.product.items[0].sellers[0].commertialOffer
-        price = commertialOffer.Price
-        listPrice = commertialOffer.ListPrice
-      } catch {
-        price = undefined
-        listPrice = undefined
-        commertialOffer = undefined
-      }
+    // let price, listPrice, commertialOffer
 
-      const data = {
-        event: 'productClick',
-        ecommerce: {
-          click: {
-            ...list,
-            products: [
-              {
-                brand,
-                category: getCategory(categories),
-                id: sku.itemId,
-                name: productName,
-                variant: sku.name,
-                price,
-                listPrice,
-                discount: `${getDiscount(commertialOffer)}%`,
-                list: `${getCategory(categories)}`,
-              },
-            ],
-          },
-        },
-      }
+    // try {
+    //   commertialOffer = e.data.product.items[0].sellers[0].commertialOffer
+    //   price = commertialOffer.Price
+    //   listPrice = commertialOffer.ListPrice
+    // } catch {
+    //   price = undefined
+    //   listPrice = undefined
+    //   commertialOffer = undefined
+    // }
 
-      push(data)
+    // const data = {
+    //   event: 'productClick',
+    //   ecommerce: {
+    //     click: {
+    //       ...list,
+    //       products: [
+    //         {
+    //           brand,
+    //           category: getCategory(categories),
+    //           id: sku.itemId,
+    //           name: productName,
+    //           variant: sku.name,
+    //           price,
+    //           listPrice,
+    //           discount: `${getDiscount(commertialOffer)}%`,
+    //           list: `${getCategory(categories)}`,
+    //         },
+    //       ],
+    //     },
+    //   },
+    // }
 
-      return
-    }
+    // push(data)
+
+    //   return
+    // }
 
     case 'vtex:addToCart': {
       const { items } = e.data
-      const words = window.location.href.split('/')
+      // const words = window.location.href.split('/')
 
-      if (words[words.length - 1] !== 'p') {
-        push({
-          ecommerce: {
-            click: {
-              products: items.map((sku: any) => ({
-                brand: sku.brand,
-                category: sku.category,
-                id: sku.skuId,
-                name: sku.name,
-                price: sku.price / 100,
-                quantity: sku.quantity,
-                variant: sku.variant,
-              })),
-            },
-            currencyCode: e.data.currency,
-          },
-          event: 'productClick',
-        })
-      }
+      // if (words[words.length - 1] !== 'p') {
+      //   push({
+      //     ecommerce: {
+      //       click: {
+      //         products: items.map((sku: any) => ({
+      //           brand: sku.brand,
+      //           category: sku.category,
+      //           id: sku.skuId,
+      //           name: sku.name,
+      //           price: sku.price / 100,
+      //           quantity: sku.quantity,
+      //           variant: sku.variant,
+      //         })),
+      //       },
+      //       currencyCode: e.data.currency,
+      //     },
+      //     event: 'productClick',
+      //   })
+      // }
 
       push({
         ecommerce: {
@@ -332,6 +354,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
     case 'vtex:productImpression': {
       const { currency, impressions, product, position } = e.data
 
+      const termSearched = window.location.pathname.split('/')[1]
       let oldImpresionFormat: Record<string, any> | null = null
 
       if (product != null && position != null) {
@@ -351,7 +374,11 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       // // Change value of list field
       const impressionsWithList = (oldImpresionFormat || parsedImpressions).map(
         function(item: any) {
-          item.list = `${list}${item.list}`
+          if (list === 'PLP Search: ') {
+            item.list = `${list}${termSearched}`
+          } else {
+            item.list = `${list}${item.list}`
+          }
           return item
         }
       )

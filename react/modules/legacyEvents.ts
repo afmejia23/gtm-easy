@@ -42,6 +42,14 @@ export function sendLegacyEvents(e: PixelMessage) {
         case 'internalSiteSearchView': {
           const data = e.data
 
+          const comp = document.getElementsByClassName(
+            'vtex-search-2-x-didYouMeanTerm'
+          )[0]
+          let corrected = ''
+          if (comp) {
+            corrected = comp.getElementsByTagName('a')[0]?.innerText
+          }
+
           push({
             event: 'interaccion',
             category:
@@ -51,10 +59,10 @@ export function sendLegacyEvents(e: PixelMessage) {
             action:
               data.search.results > 0
                 ? data.search.correction.misspelled
-                  ? 'Termino corregido'
+                  ? data.search?.term
                   : 'Con resultados'
                 : 'Sin resultados',
-            tag: data.search?.term,
+            tag: corrected ? corrected : data.search?.term,
           })
 
           push({
