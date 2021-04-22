@@ -129,7 +129,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
               {
                 brand,
                 category: getCategory(categories),
-                id: sku.itemId,
+                id: sku.referenceId.Value,
                 name: productName,
                 variant: sku.name,
                 price,
@@ -149,8 +149,9 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       return
     }
 
+    // case 'vtex:productView': {
     case 'myProductEvent': {
-      const product = e.data.data.Product
+      const product = e.data.data.Product.product
 
       let price, listPrice, commertialOffer, promotion, cencoPrice
 
@@ -188,7 +189,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
               {
                 brand: product?.brand,
                 category: getCategory(product?.categories),
-                id: product?.sku?.itemId,
+                id: product?.sku?.referenceId.Value,
                 name: product?.productName,
                 variant: product?.sku?.name,
                 price,
@@ -256,6 +257,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:addToCart': {
       const { items } = e.data
+
       // const words = window.location.href.split('/')
 
       // if (words[words.length - 1] !== 'p') {
@@ -503,7 +505,7 @@ function getProductImpressionObjectData() {
   return ({ product, position }: any) => ({
     brand: product.brand,
     category: getCategory(product.categories),
-    id: product.sku.itemId,
+    id: product.sku.referenceId.Value,
     list: getCategory(product.categories),
     name: product.productName,
     position,

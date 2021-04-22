@@ -5,6 +5,53 @@ export function sendExtraEvents(e: PixelMessage) {
   switch (e.data.eventName) {
     case 'vtex:pageView': {
       const page = e.data.pageUrl.replace(e.origin, '')
+      console.log('This is the page name----------->')
+      console.log(page)
+      console.log('This is the pageView event')
+      console.log(e)
+
+      switch (e.data.routeId) {
+        case 'store.custom#allProductOffers': {
+          push({
+            event: 'pageViewVirtual',
+            location: e.data.pageUrl,
+            page,
+            referrer: e.data.referrer,
+            title: 'Landing Ofertas',
+          })
+        }
+
+        case 'store.search#subcategory': {
+          push({
+            event: 'pageViewVirtual',
+            location: e.data.pageUrl,
+            page,
+            referrer: e.data.referrer,
+            title: 'PLP - Category',
+          })
+        }
+
+        case 'store.orderplaced': {
+          push({
+            event: 'pageViewVirtual',
+            location: e.data.pageUrl,
+            page,
+            referrer: e.data.referrer,
+            title: 'Checkout - Confirmation',
+          })
+        }
+      }
+
+      if (page === '/account') {
+        push({
+          event: 'pageViewVirtual',
+          location: e.data.pageUrl,
+          page,
+          referrer: e.data.referrer,
+          title: 'My account',
+        })
+        return
+      }
 
       if (
         e.data.routeId === 'store.search' ||
