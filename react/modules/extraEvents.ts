@@ -5,10 +5,6 @@ export function sendExtraEvents(e: PixelMessage) {
   switch (e.data.eventName) {
     case 'vtex:pageView': {
       const page = e.data.pageUrl.replace(e.origin, '')
-      console.log('This is the page name----------->')
-      console.log(page)
-      console.log('This is the pageView event')
-      console.log(e)
 
       switch (e.data.routeId) {
         case 'store.custom#allProductOffers': {
@@ -19,6 +15,7 @@ export function sendExtraEvents(e: PixelMessage) {
             referrer: e.data.referrer,
             title: 'Landing Ofertas',
           })
+          return
         }
 
         case 'store.search#subcategory': {
@@ -29,6 +26,7 @@ export function sendExtraEvents(e: PixelMessage) {
             referrer: e.data.referrer,
             title: 'PLP - Category',
           })
+          return
         }
 
         case 'store.orderplaced': {
@@ -39,6 +37,7 @@ export function sendExtraEvents(e: PixelMessage) {
             referrer: e.data.referrer,
             title: 'Checkout - Confirmation',
           })
+          return
         }
       }
 

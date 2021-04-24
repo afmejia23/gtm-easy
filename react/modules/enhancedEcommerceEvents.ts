@@ -34,9 +34,9 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
   // Define list value
   if (pathname === '/') {
-    list = 'HOME Carrusel: '
+    list = 'HOME Carrusel: Productos destacados'
   } else if (words[words.length - 1] === 'p') {
-    list = 'PDP recommendations: '
+    list = 'PDP recommendations: Otros clientes también vieron'
   } else if (currentSearch) {
     list = 'PLP Search: '
   } else {
@@ -118,6 +118,15 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
         listTerm = `${list}${termSearched}`
       } else {
         listTerm = `${list}${getCategory(categories)}`
+
+        if (
+          list !== 'HOME Carrusel: Productos destacados' &&
+          list !== 'PDP recommendations: Otros clientes también vieron'
+        ) {
+          listTerm = `${list}${getCategory(categories)}`
+        } else {
+          listTerm = list
+        }
       }
 
       const data = {
@@ -379,7 +388,14 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
           if (list === 'PLP Search: ') {
             item.list = `${list}${termSearched}`
           } else {
-            item.list = `${list}${item.list}`
+            if (
+              list !== 'HOME Carrusel: Productos destacados' &&
+              list !== 'PDP recommendations: Otros clientes también vieron'
+            ) {
+              item.list = `${list}${item.list}`
+            } else {
+              item.list = list
+            }
           }
           return item
         }
