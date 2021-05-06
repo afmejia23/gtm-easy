@@ -134,6 +134,8 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'myProductEvent': {
       const product = e.data.data.Product
+      console.log('This is the data********')
+      console.log(e)
 
       let price, listPrice, commertialOffer, promotion, cencoPrice
 
