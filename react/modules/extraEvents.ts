@@ -41,8 +41,10 @@ export function sendExtraEvents(e: PixelMessage) {
   window.onhashchange = locationHashChanged
 
   switch (e.data.eventName) {
-    case 'vtex:pageVisew': {
+    case 'vtex:pageView': {
       const page = e.data.pageUrl.replace(e.origin, '')
+      console.log('El pageView si se está disparando----------------->')
+      console.log(e)
 
       switch (e.data.routeId) {
         case 'store.custom#allProductOffers': {
