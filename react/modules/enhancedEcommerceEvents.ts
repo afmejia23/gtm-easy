@@ -8,6 +8,22 @@ import {
 } from '../typings/events'
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
 
+// let wishListClicked = false
+
+// window.addEventListener('DOMContentLoaded', () => {
+//   const wishListBtn = document.querySelectorAll(
+//     '.vtex-wish-list-1-x-wishlistIcon'
+//   )
+
+//   try {
+//     wishListBtn.forEach(element => {
+//       element.addEventListener('click', () => {
+//         wishListClicked = true
+//       })
+//     })
+//   } catch {}
+// })
+
 export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
   function checkCenco(promo: any) {
     if (promo?.split(' ')[0].split('_').length > 2) return true
@@ -44,52 +60,10 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
   }
 
   switch (e.data.eventName) {
-    // case 'vtex:productView': {
-    //   const { selectedSku, productName, brand, categories } = e.data.product
-
-    //   let price, listPrice, commertialOffer
-
-    //   try {
-    //     commertialOffer = e.data.product.items[0].sellers[0].commertialOffer
-    //     price = commertialOffer.Price
-    //     listPrice = commertialOffer.ListPrice
-    //   } catch {
-    //     price = undefined
-    //     listPrice = undefined
-    //     commertialOffer = undefined
-    //   }
-
-    //   const data = {
-    //     ecommerce: {
-    //       detail: {
-    //         products: [
-    //           {
-    //             brand,
-    //             category: getCategory(categories),
-    //             id: selectedSku.itemId,
-    //             name: productName,
-    //             variant: selectedSku.name,
-    //             price,
-    //             listPrice,
-    //             discount: `${getDiscount(commertialOffer)}%`,
-    //             list: `PLP Category: ${getCategory(categories)}`,
-    //           },
-    //         ],
-    //       },
-    //     },
-    //     event: 'productDetail',
-    //   }
-
-    //   push(data)
-
-    //   return
-    // }
-
     case 'vtex:productClick': {
       const product = e.data.product
 
       const { productName, brand, categories, sku } = product
-      // const list = e.data.list ? { actionField: { list: e.data.list } } : {}
 
       let price, listPrice, commertialOffer, promotion, cencoPrice
 
@@ -158,9 +132,8 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       return
     }
 
-    // case 'vtex:productView': {
     case 'myProductEvent': {
-      const product = e.data.data.Product.product
+      const product = e.data.data.Product
 
       let price, listPrice, commertialOffer, promotion, cencoPrice
 
@@ -189,6 +162,15 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
         listTerm = `${list}${termSearched}`
       } else {
         listTerm = `${list}${getCategory(product?.categories)}`
+      }
+
+      if (
+        list !== 'HOME Carrusel: Productos destacados' &&
+        list !== 'PDP recommendations: Otros clientes también vieron'
+      ) {
+        listTerm = `${list}${getCategory(product?.categories)}`
+      } else {
+        listTerm = list
       }
 
       const data = {
@@ -266,28 +248,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:addToCart': {
       const { items } = e.data
-
-      // const words = window.location.href.split('/')
-
-      // if (words[words.length - 1] !== 'p') {
-      //   push({
-      //     ecommerce: {
-      //       click: {
-      //         products: items.map((sku: any) => ({
-      //           brand: sku.brand,
-      //           category: sku.category,
-      //           id: sku.skuId,
-      //           name: sku.name,
-      //           price: sku.price / 100,
-      //           quantity: sku.quantity,
-      //           variant: sku.variant,
-      //         })),
-      //       },
-      //       currencyCode: e.data.currency,
-      //     },
-      //     event: 'productClick',
-      //   })
-      // }
 
       push({
         ecommerce: {

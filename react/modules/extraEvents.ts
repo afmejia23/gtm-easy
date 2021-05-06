@@ -2,8 +2,46 @@ import push from './push'
 import { PixelMessage } from '../typings/events'
 
 export function sendExtraEvents(e: PixelMessage) {
+  // Detect when URL changes
+  const locationHashChanged = () => {
+    let title
+
+    switch (location.hash) {
+      case '#/profile':
+        title = 'My acccount - profile'
+        break
+      case '#/cards':
+        title = 'My acccount - cards'
+        break
+      case '#/addresses':
+        title = 'My acccount - addresses'
+        break
+      case '#/orders':
+        title = 'My acccount - orders'
+        break
+      case '#/wishlist':
+        title = 'My account - wishlist'
+        break
+      default:
+        break
+    }
+
+    if (location.href.includes('account')) {
+      push({
+        event: 'pageViewVirtual',
+        location: location.href,
+        page: location.href + location.hash,
+        title,
+      })
+    }
+
+    console.log(location.hash)
+  }
+
+  window.onhashchange = locationHashChanged
+
   switch (e.data.eventName) {
-    case 'vtex:pageView': {
+    case 'vtex:pageVisew': {
       const page = e.data.pageUrl.replace(e.origin, '')
 
       switch (e.data.routeId) {
@@ -39,17 +77,6 @@ export function sendExtraEvents(e: PixelMessage) {
           })
           return
         }
-      }
-
-      if (page === '/account') {
-        push({
-          event: 'pageViewVirtual',
-          location: e.data.pageUrl,
-          page,
-          referrer: e.data.referrer,
-          title: 'My account',
-        })
-        return
       }
 
       if (
