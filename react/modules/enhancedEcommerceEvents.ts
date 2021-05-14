@@ -8,21 +8,26 @@ import {
 } from '../typings/events'
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
 
-// let wishListClicked = false
-
-// window.addEventListener('DOMContentLoaded', () => {
-//   const wishListBtn = document.querySelectorAll(
-//     '.vtex-wish-list-1-x-wishlistIcon'
-//   )
-
-//   try {
-//     wishListBtn.forEach(element => {
-//       element.addEventListener('click', () => {
-//         wishListClicked = true
-//       })
-//     })
-//   } catch {}
-// })
+// Listen when click on "-" within the minicart
+let minusClicked = false
+let removeElements: any
+let observer = new MutationObserver(() => {
+  removeElements = document.querySelectorAll(
+    '[aria-label="Cantidad decreciente"]'
+  )
+  if (removeElements) {
+    for (let i = 0; i < removeElements.length; i++) {
+      removeElements[i].addEventListener(
+        'click',
+        () => {
+          minusClicked = true
+        },
+        false
+      )
+    }
+  }
+})
+observer.observe(document, { childList: true, subtree: true })
 
 export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
   function checkCenco(promo: any) {
@@ -134,8 +139,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'myProductEvent': {
       const product = e.data.data.Product
-      console.log('This is the data********')
-      console.log(e)
 
       let price, listPrice, commertialOffer, promotion, cencoPrice
 
@@ -251,23 +254,87 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
     case 'vtex:addToCart': {
       const { items } = e.data
 
-      push({
-        ecommerce: {
-          add: {
-            products: items.map((sku: any) => ({
-              brand: sku.brand,
-              category: sku.category,
-              id: sku.skuId,
-              name: sku.name,
-              price: sku.price / 100,
-              quantity: sku.quantity,
-              variant: sku.variant,
-            })),
+      // Include discount if located in a PDP
+      const words = window.location.pathname.split('/')
+      let discount: string | undefined
+
+      if (!minusClicked) {
+        push({
+          ecommerce: {
+            add: {
+              products: items.map((sku: any) => {
+                if (words[words.length - 1] == 'p') {
+                  // Get discount
+                  const component = document.getElementsByClassName(
+                    'easycl-precio-cencosud-0-x-porcentajeCenco'
+                  )[0]
+                  if (component) {
+                    discount = component.textContent?.replace('-', '')
+                  } else {
+                    discount = '0%'
+                  }
+                } else {
+                  const difference = Math.abs(sku.price - sku.sellingPrice)
+                  discount = `${Math.round((difference / sku.price) * 100)}%`
+                }
+
+                return {
+                  brand: sku.brand,
+                  category: sku.category,
+                  id: sku.skuId,
+                  name: sku.name,
+                  listPrice: sku.price / 100,
+                  price: sku.sellingPrice / 100,
+                  discount,
+                  quantity: sku.quantity,
+                  variant: sku.variant,
+                }
+              }),
+            },
+            currencyCode: e.data.currency,
           },
-          currencyCode: e.data.currency,
-        },
-        event: 'addToCart',
-      })
+          event: 'addToCart',
+        })
+      } else {
+        push({
+          ecommerce: {
+            remove: {
+              products: items.map((sku: any) => {
+                if (words[words.length - 1] == 'p') {
+                  // Get discount
+                  const component = document.getElementsByClassName(
+                    'easycl-precio-cencosud-0-x-porcentajeCenco'
+                  )[0]
+                  if (component) {
+                    discount = component.textContent?.replace('-', '')
+                  } else {
+                    discount = '0%'
+                  }
+                } else {
+                  const difference = Math.abs(sku.price - sku.sellingPrice)
+                  discount = `${Math.round((difference / sku.price) * 100)}%`
+                }
+
+                return {
+                  brand: sku.brand,
+                  category: sku.category,
+                  id: sku.skuId,
+                  name: sku.name,
+                  listPrice: sku.price / 100,
+                  price: sku.sellingPrice / 100,
+                  discount,
+                  quantity: sku.quantity,
+                  variant: sku.variant,
+                }
+              }),
+            },
+            currencyCode: e.data.currency,
+          },
+          event: 'removeFromCart',
+        })
+      }
+
+      minusClicked = false
 
       return
     }

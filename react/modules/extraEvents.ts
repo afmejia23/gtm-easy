@@ -43,8 +43,6 @@ export function sendExtraEvents(e: PixelMessage) {
   switch (e.data.eventName) {
     case 'vtex:pageView': {
       const page = e.data.pageUrl.replace(e.origin, '')
-      console.log('El pageView si se está disparando----------------->')
-      console.log(e)
 
       switch (e.data.routeId) {
         case 'store.custom#allProductOffers': {
