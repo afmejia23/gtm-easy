@@ -27,12 +27,19 @@ export function sendExtraEvents(e: PixelMessage) {
     }
 
     if (location.href.includes('account')) {
-      push({
-        event: 'pageViewVirtual',
-        location: location.href,
-        page: location.href + location.hash,
-        title,
-      })
+      let triggered = false
+      const prevEvent = { ...window.dataLayer[window.dataLayer.length - 1] }
+      if ('pageViewVirtual' === prevEvent?.event && title === prevEvent.title) {
+        triggered = true
+      }
+      if (!triggered) {
+        push({
+          event: 'pageViewVirtual',
+          location: location.href,
+          page: location.href + location.hash,
+          title,
+        })
+      }
     }
 
     console.log(location.hash)

@@ -505,12 +505,17 @@ function getPurchaseObjectData(order: Order) {
 }
 
 function getProductObjectData(product: ProductOrder) {
+  const difference = Math.abs(product.price - product.originalPrice)
+  const discount = `${Math.round((difference / product.originalPrice) * 100)}%`
+
   return {
     brand: product.brand,
     category: product.categoryTree?.join('/'),
     id: product.sku,
     name: product.name,
     price: product.price,
+    listPrice: product.originalPrice,
+    discount,
     quantity: product.quantity,
     variant: product.skuName,
   }
