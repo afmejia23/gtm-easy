@@ -9,18 +9,33 @@ import {
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
 
 // Listen when click on "-" within the minicart
-let minusClicked = false
-let removeElements: any
+let minusClicked = false,
+  plusClicked = false
+let removeElements: any, addElements: any
 let observer = new MutationObserver(() => {
   removeElements = document.querySelectorAll(
     '[aria-label="Cantidad decreciente"]'
   )
+  addElements = document.querySelectorAll('[aria-label="Aumentar la cantidad"]')
+
   if (removeElements) {
     for (let i = 0; i < removeElements.length; i++) {
       removeElements[i].addEventListener(
         'click',
         () => {
           minusClicked = true
+        },
+        false
+      )
+    }
+  }
+
+  if (addElements) {
+    for (let i = 0; i < addElements.length; i++) {
+      addElements[i].addEventListener(
+        'click',
+        () => {
+          plusClicked = true
         },
         false
       )
@@ -253,6 +268,8 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:addToCart': {
       const { items } = e.data
+      console.log('This is the data from the event------------->')
+      console.log(e)
 
       // Include discount if located in a PDP
       const words = window.location.pathname.split('/')
@@ -286,7 +303,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
                   listPrice: sku.price / 100,
                   price: sku.sellingPrice / 100,
                   discount,
-                  quantity: sku.quantity,
+                  quantity: plusClicked ? 1 : sku.quantity,
                   variant: sku.variant,
                 }
               }),
@@ -295,9 +312,12 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
           },
           event: 'addToCart',
         })
+        plusClicked = false
+        return
       } else {
         push({
           ecommerce: {
+            currencyCode: e.data.currency,
             remove: {
               products: items.map((sku: any) => {
                 if (words[words.length - 1] == 'p') {
@@ -323,12 +343,11 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
                   listPrice: sku.price / 100,
                   price: sku.sellingPrice / 100,
                   discount,
-                  quantity: sku.quantity,
+                  quantity: 1,
                   variant: sku.variant,
                 }
               }),
             },
-            currencyCode: e.data.currency,
           },
           event: 'removeFromCart',
         })
@@ -341,6 +360,8 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:removeFromCart': {
       const { items } = e.data
+      console.log('Items to be removed----------------------->')
+      console.log(items)
 
       push({
         ecommerce: {
