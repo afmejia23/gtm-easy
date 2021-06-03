@@ -186,6 +186,7 @@ interface CartItem {
   name: string
   skuName: string
   price: number
+  priceIsInt?: boolean
   sellingPrice: number
   productId: string
   productRefId: string
@@ -396,6 +397,7 @@ interface ItemSummary {
 export interface Seller {
   commertialOffer: CommertialOffer
   sellerId: string
+  sellerDefault: boolean
 }
 
 export interface CommertialOffer {
