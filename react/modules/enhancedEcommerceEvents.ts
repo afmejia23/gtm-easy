@@ -4,9 +4,21 @@ import {
   PixelMessage,
   ProductOrder,
   // Impression,
+  ProductViewData,
   CartItem,
+  Seller,
 } from '../typings/events'
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
+
+function getSeller(sellers: Seller[]) {
+  const defaultSeller = sellers.find(seller => seller.sellerDefault)
+
+  if (!defaultSeller) {
+    return sellers[0]
+  }
+
+  return defaultSeller
+}
 
 // Listen when click on "-" within the minicart
 let minusClicked = false,
@@ -80,6 +92,48 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
   }
 
   switch (e.data.eventName) {
+    case 'vtex:productView': {
+      console.log('Previous page----------------->')
+      console.log(list)
+
+      const {
+        selectedSku,
+        productName,
+        brand,
+        categories,
+      } = (e.data as ProductViewData).product
+
+      let price
+
+      try {
+        price = getSeller(e.data.product.items[0].sellers).commertialOffer.Price
+      } catch {
+        price = undefined
+      }
+
+      const data = {
+        ecommerce: {
+          detail: {
+            products: [
+              {
+                brand,
+                category: getCategory(categories),
+                id: selectedSku.itemId,
+                name: productName,
+                variant: selectedSku.name,
+                price,
+              },
+            ],
+          },
+        },
+        event: 'productDetail',
+      }
+
+      push(data)
+
+      return
+    }
+
     case 'vtex:productClick': {
       const product = e.data.product
 
@@ -126,7 +180,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       const data = {
         event: 'newProductClick',
         ecommerce: {
-          click: {
+          detail: {
             // ...list,
             products: [
               {
@@ -148,6 +202,15 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       }
 
       push(data)
+
+      // Among us
+      const productClick = {
+        event: 'newProductDetail',
+        ecommerce: {
+          click: { ...data.ecommerce.detail },
+        },
+      }
+      push(productClick)
 
       return
     }
