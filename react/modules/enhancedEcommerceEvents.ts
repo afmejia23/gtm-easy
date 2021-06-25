@@ -93,8 +93,8 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
   switch (e.data.eventName) {
     case 'vtex:productView': {
-      console.log('Previous page----------------->')
-      console.log(list)
+      console.log('Product Detail information-------------------->')
+      console.log(e)
 
       const {
         selectedSku,
@@ -178,10 +178,14 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       }
 
       const data = {
-        event: 'newProductClick',
+        event: 'newProductDetail',
         ecommerce: {
           detail: {
             // ...list,
+            actionField: {
+              list: listTerm,
+              action: 'detail',
+            },
             products: [
               {
                 brand,
@@ -193,7 +197,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
                 listPrice,
                 cencoPrice,
                 discount: `${getDiscount(commertialOffer)}%`,
-                list: listTerm,
                 position: e.data.position,
               },
             ],
@@ -205,11 +208,12 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
       // Among us
       const productClick = {
-        event: 'newProductDetail',
+        event: 'newProductClick',
         ecommerce: {
           click: { ...data.ecommerce.detail },
         },
       }
+      productClick.ecommerce.click.actionField.action = 'click'
       push(productClick)
 
       return
@@ -361,7 +365,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
                 return {
                   brand: sku.brand,
                   category: sku.category,
-                  id: sku.skuId,
+                  id: sku.productRefId,
                   name: sku.name,
                   listPrice: sku.price / 100,
                   price: sku.sellingPrice / 100,
