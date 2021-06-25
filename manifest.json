@@ -8,13 +8,6 @@
   "scripts": {
     "postreleasy": "vtex publish --verbose"
   },
-  "billingOptions": {
-    "type": "free",
-    "support": {
-      "url": "https://support.vtex.com/hc/requests"
-    },
-    "availableCountries": ["*"]
-  },
   "builders": {
     "react": "3.x",
     "store": "0.x",
@@ -22,11 +15,16 @@
     "docs": "0.x"
   },
   "dependencies": {
-    "vtex.pixel-interfaces": "1.x"
+    "vtex.pixel-interfaces": "1.x",
+    "vtex.product-context": "0.x",
+    "vtex.catalog-graphql": "1.x"
   },
   "policies": [
     {
       "name": "pixel"
+    },
+    {
+      "name": "graphql-query"
     }
   ],
   "settingsSchema": {

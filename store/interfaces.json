@@ -1,5 +1,8 @@
 {
   "pixel.gtm": {
     "component": "index"
+  },
+  "tax-code": {
+    "component": "TaxCodeComponent"
   }
 }
