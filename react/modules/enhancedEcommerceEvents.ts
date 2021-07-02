@@ -4,31 +4,38 @@ import {
   PixelMessage,
   ProductOrder,
   // Impression,
-  ProductViewData,
+  // ProductViewData,
   CartItem,
-  Seller,
+  // Seller,
 } from '../typings/events'
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
 
-function getSeller(sellers: Seller[]) {
-  const defaultSeller = sellers.find(seller => seller.sellerDefault)
+// function getSeller(sellers: Seller[]) {
+//   const defaultSeller = sellers.find(seller => seller.sellerDefault)
 
-  if (!defaultSeller) {
-    return sellers[0]
-  }
+//   if (!defaultSeller) {
+//     return sellers[0]
+//   }
 
-  return defaultSeller
-}
+//   return defaultSeller
+// }
 
-// Listen when click on "-" within the minicart
+// Listen when click on "-" within the minicart, and when quick view button is clicked
 let minusClicked = false,
-  plusClicked = false
-let removeElements: any, addElements: any
+  plusClicked = false,
+  quickViewClicked = false
+
+let removeElements: any, addElements: any, quickViewElements: any
 let observer = new MutationObserver(() => {
   removeElements = document.querySelectorAll(
     '[aria-label="Cantidad decreciente"]'
   )
+
   addElements = document.querySelectorAll('[aria-label="Aumentar la cantidad"]')
+
+  quickViewElements = document.querySelectorAll(
+    '.vtex-flex-layout-0-x-flexRow--quickview'
+  )
 
   if (removeElements) {
     for (let i = 0; i < removeElements.length; i++) {
@@ -53,7 +60,20 @@ let observer = new MutationObserver(() => {
       )
     }
   }
+
+  if (quickViewElements) {
+    for (let i = 0; i < quickViewElements.length; i++) {
+      quickViewElements[i].addEventListener(
+        'click',
+        () => {
+          quickViewClicked = true
+        },
+        false
+      )
+    }
+  }
 })
+
 observer.observe(document, { childList: true, subtree: true })
 
 export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
@@ -93,43 +113,40 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
   switch (e.data.eventName) {
     case 'vtex:productView': {
-      console.log('Product Detail information-------------------->')
-      console.log(e)
+      // const {
+      //   selectedSku,
+      //   productName,
+      //   brand,
+      //   categories,
+      // } = (e.data as ProductViewData).product
 
-      const {
-        selectedSku,
-        productName,
-        brand,
-        categories,
-      } = (e.data as ProductViewData).product
+      // let price
 
-      let price
+      // try {
+      //   price = getSeller(e.data.product.items[0].sellers).commertialOffer.Price
+      // } catch {
+      //   price = undefined
+      // }
 
-      try {
-        price = getSeller(e.data.product.items[0].sellers).commertialOffer.Price
-      } catch {
-        price = undefined
-      }
+      // const data = {
+      //   ecommerce: {
+      //     detail: {
+      //       products: [
+      //         {
+      //           brand,
+      //           category: getCategory(categories),
+      //           id: selectedSku.itemId,
+      //           name: productName,
+      //           variant: selectedSku.name,
+      //           price,
+      //         },
+      //       ],
+      //     },
+      //   },
+      //   event: 'productDetail',
+      // }
 
-      const data = {
-        ecommerce: {
-          detail: {
-            products: [
-              {
-                brand,
-                category: getCategory(categories),
-                id: selectedSku.itemId,
-                name: productName,
-                variant: selectedSku.name,
-                price,
-              },
-            ],
-          },
-        },
-        event: 'productDetail',
-      }
-
-      push(data)
+      // push(data)
 
       return
     }
@@ -204,88 +221,98 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
         },
       }
 
-      push(data)
+      if (!quickViewClicked) {
+        push(data)
+      }
+      quickViewClicked = false
 
       // Among us
       const productClick = {
         event: 'newProductClick',
         ecommerce: {
-          click: { ...data.ecommerce.detail },
+          click: {
+            actionField: {
+              list: listTerm,
+              action: 'click',
+            },
+            products: [...data.ecommerce.detail.products],
+          },
         },
       }
-      productClick.ecommerce.click.actionField.action = 'click'
       push(productClick)
 
       return
     }
 
-    case 'myProductEvent': {
-      const product = e.data.data.Product
+    // case 'myProductEvent': {
+    //   const product = e.data.data.Product
 
-      let price, listPrice, commertialOffer, promotion, cencoPrice
+    //   let price, listPrice, commertialOffer, promotion, cencoPrice
 
-      try {
-        commertialOffer = product.items[0].sellers[0].commertialOffer
-        promotion = commertialOffer?.teasers[0]?.name
-        price = commertialOffer.Price
-        listPrice = commertialOffer.ListPrice
-        const isCenco = promotion ? checkCenco(promotion) : false
+    //   try {
+    //     commertialOffer = product.items[0].sellers[0].commertialOffer
+    //     promotion = commertialOffer?.teasers[0]?.name
+    //     price = commertialOffer.Price
+    //     listPrice = commertialOffer.ListPrice
+    //     const isCenco = promotion ? checkCenco(promotion) : false
 
-        if (isCenco) {
-          cencoPrice = calculateCencoPrice(promotion, listPrice)
-        } else {
-          cencoPrice = listPrice
-        }
-      } catch {
-        price = undefined
-        listPrice = undefined
-        commertialOffer = undefined
-      }
+    //     if (isCenco) {
+    //       cencoPrice = calculateCencoPrice(promotion, listPrice)
+    //     } else {
+    //       cencoPrice = listPrice
+    //     }
+    //   } catch {
+    //     price = undefined
+    //     listPrice = undefined
+    //     commertialOffer = undefined
+    //   }
 
-      const termSearched = window.location.pathname.split('/')[1]
-      let listTerm
+    //   const termSearched = window.location.pathname.split('/')[1]
+    //   let listTerm
 
-      if (list === 'PLP Search: ') {
-        listTerm = `${list}${termSearched}`
-      } else {
-        listTerm = `${list}${getCategory(product?.categories)}`
-      }
+    //   if (list === 'PLP Search: ') {
+    //     listTerm = `${list}${termSearched}`
+    //   } else {
+    //     listTerm = `${list}${getCategory(product?.categories)}`
+    //   }
 
-      if (
-        list !== 'HOME Carrusel: Productos destacados' &&
-        list !== 'PDP recommendations: Otros clientes también vieron'
-      ) {
-        listTerm = `${list}${getCategory(product?.categories)}`
-      } else {
-        listTerm = list
-      }
+    //   if (
+    //     list !== 'HOME Carrusel: Productos destacados' &&
+    //     list !== 'PDP recommendations: Otros clientes también vieron'
+    //   ) {
+    //     listTerm = `${list}${getCategory(product?.categories)}`
+    //   } else {
+    //     listTerm = list
+    //   }
 
-      const data = {
-        ecommerce: {
-          detail: {
-            products: [
-              {
-                brand: product?.brand,
-                category: getCategory(product?.categories),
-                id: product?.sku?.referenceId.Value,
-                name: product?.productName,
-                variant: product?.sku?.name,
-                price,
-                listPrice,
-                cencoPrice,
-                discount: `${getDiscount(commertialOffer)}%`,
-                list: listTerm,
-              },
-            ],
-          },
-        },
-        event: 'newProductDetail',
-      }
+    //   const data = {
+    //     ecommerce: {
+    //       detail: {
+    //         products: [
+    //           {
+    //             brand: product?.brand,
+    //             category: getCategory(product?.categories),
+    //             id: product?.sku?.referenceId.Value,
+    //             name: product?.productName,
+    //             variant: product?.sku?.name,
+    //             price,
+    //             listPrice,
+    //             cencoPrice,
+    //             discount: `${getDiscount(commertialOffer)}%`,
+    //             list: listTerm,
+    //           },
+    //         ],
+    //       },
+    //     },
+    //     event: 'newProductDetail',
+    //   }
 
-      push(data)
-
-      return
-    }
+    //   if (!quickViewClicked) {
+    //     push(data)
+    //   }
+    //   quickViewClicked = false
+    //   return
+    // }
 
     // case 'vtex:productClick': {
     //   console.log('Printing productClick Event------------>')
@@ -335,8 +362,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:addToCart': {
       const { items } = e.data
-      console.log('This is the data from the event------------->')
-      console.log(e)
 
       // Include discount if located in a PDP
       const words = window.location.pathname.split('/')
@@ -427,8 +452,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:removeFromCart': {
       const { items } = e.data
-      console.log('Items to be removed----------------------->')
-      console.log(items)
 
       push({
         ecommerce: {
@@ -439,7 +462,7 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
               id: sku.skuId,
               category: sku.category,
               name: sku.name,
-              price: `${sku.price}`,
+              price: `${sku.price / 100}`,
               quantity: sku.quantity,
               variant: sku.variant,
             })),
