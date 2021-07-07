@@ -9,6 +9,12 @@ import {
   // Seller,
 } from '../typings/events'
 import { AnalyticsEcommerceProduct } from '../typings/gtm'
+import {
+  ApolloClient,
+  InMemoryCache,
+  NormalizedCacheObject,
+  gql,
+} from '@apollo/client'
 
 // function getSeller(sellers: Seller[]) {
 //   const defaultSeller = sellers.find(seller => seller.sellerDefault)
@@ -504,6 +510,30 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:productImpression': {
       const { currency, impressions, product, position } = e.data
+      console.log('Adding taxCode to impressions here***********')
+
+      /*
+      For each product, query the taxCode
+      */
+      const client: ApolloClient<NormalizedCacheObject> = new ApolloClient({
+        cache: new InMemoryCache(),
+        queryDeduplication: true,
+      })
+
+      client
+        .query({
+          query: gql`
+            {
+              product(identifier: { field: id, value: 2 }) {
+                id
+                name
+                taxCode
+              }
+            }
+          `,
+          context: { provider: 'vtex.catalog-graphql' },
+        })
+        .then(result => console.log(result))
 
       const termSearched = window.location.pathname.split('/')[1]
       let oldImpresionFormat: Record<string, any> | null = null

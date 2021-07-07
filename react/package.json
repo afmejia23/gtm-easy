@@ -8,13 +8,14 @@
   "devDependencies": {
     "@types/node": "^12.0.0",
     "@vtex/test-tools": "^3.3.2",
-    "easycl.google-tag-manager-easy": "https://felipedev--easycl.myvtex.com/_v/private/typings/linked/v1/easycl.google-tag-manager-easy@4.1.9+build1623877532/public/@types/easycl.google-tag-manager-easy",
+    "easycl.google-tag-manager-easy": "https://felipedev--easycl.myvtex.com/_v/private/typings/linked/v1/easycl.google-tag-manager-easy@4.1.9+build1625665846/public/@types/easycl.google-tag-manager-easy",
     "vtex.catalog-graphql": "http://vtex.vtexassets.com/_v/public/typings/v1/vtex.catalog-graphql@1.96.0/public/@types/vtex.catalog-graphql",
     "vtex.pixel-interfaces": "http://vtex.vtexassets.com/_v/public/typings/v1/vtex.pixel-interfaces@1.1.1/public/_types/react",
     "vtex.product-context": "http://vtex.vtexassets.com/_v/public/typings/v1/vtex.product-context@0.9.9/public/@types/vtex.product-context",
-    "vtex.render-runtime": "http://vtex.vtexassets.com/_v/public/typings/v1/vtex.render-runtime@8.128.4/public/@types/vtex.render-runtime"
+    "vtex.render-runtime": "http://vtex.vtexassets.com/_v/public/typings/v1/vtex.render-runtime@8.130.0/public/@types/vtex.render-runtime"
   },
   "dependencies": {
+    "@apollo/client": "^3.2.7",
     "react-apollo": "^3.1.5"
   }
 }
