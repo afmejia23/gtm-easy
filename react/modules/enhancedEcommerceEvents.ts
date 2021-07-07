@@ -221,11 +221,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
         },
       }
 
-      if (!quickViewClicked) {
-        push(data)
-      }
-      quickViewClicked = false
-
       // Among us
       const productClick = {
         event: 'newProductClick',
@@ -240,6 +235,11 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
         },
       }
       push(productClick)
+
+      if (!quickViewClicked) {
+        push(data)
+      }
+      quickViewClicked = false
 
       return
     }
