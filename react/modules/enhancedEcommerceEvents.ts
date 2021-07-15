@@ -15,6 +15,7 @@ import {
   NormalizedCacheObject,
   gql,
 } from '@apollo/client'
+import { GRUPO, SUB_RUBRO, RUBRO, SECCION } from './SAP_fields'
 
 // function getSeller(sellers: Seller[]) {
 //   const defaultSeller = sellers.find(seller => seller.sellerDefault)
@@ -81,6 +82,21 @@ let observer = new MutationObserver(() => {
 })
 
 observer.observe(document, { childList: true, subtree: true })
+
+const client: ApolloClient<NormalizedCacheObject> = new ApolloClient({
+  cache: new InMemoryCache(),
+  uri: '/_v/private/easycl.google-tag-manager-easy@4.1.9/graphiql/v1',
+})
+
+const query = gql`
+  query Product($identifier: ProductUniqueIdentifier) {
+    product(identifier: $identifier) {
+      id
+      name
+      taxCode
+    }
+  }
+`
 
 export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
   function checkCenco(promo: any) {
@@ -159,6 +175,8 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:productClick': {
       const product = e.data.product
+      console.log('product*********************')
+      console.log(product)
 
       const { productName, brand, categories, sku } = product
 
@@ -221,26 +239,50 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
                 cencoPrice,
                 discount: `${getDiscount(commertialOffer)}%`,
                 position: e.data.position,
+                taxCode: '',
+                grupo: '',
+                subRubro: '',
+                rubro: '',
+                seccion: '',
               },
             ],
           },
         },
       }
 
-      // Among us
-      const productClick = {
-        event: 'newProductClick',
-        ecommerce: {
-          click: {
-            actionField: {
-              list: listTerm,
-              action: 'click',
+      client
+        .query({
+          variables: {
+            identifier: {
+              field: 'refId',
+              value: sku.referenceId.Value,
             },
-            products: [...data.ecommerce.detail.products],
           },
-        },
-      }
-      push(productClick)
+          query: query,
+        })
+        .then(result => {
+          const taxCode: any = result.data.product.taxCode
+          data.ecommerce.detail.products[0].taxCode =
+            result.data.product.taxCode
+          data.ecommerce.detail.products[0].grupo = GRUPO[taxCode]
+          data.ecommerce.detail.products[0].subRubro =
+            SUB_RUBRO[taxCode.substring(0, 6)]
+          data.ecommerce.detail.products[0].rubro =
+            RUBRO[taxCode.substring(0, 4)]
+          data.ecommerce.detail.products[0].seccion =
+            SECCION[taxCode.substring(0, 2)]
+          push(data)
+
+          // Among us
+          const productClick = {
+            event: 'newProductDetail',
+            ecommerce: {
+              click: { ...data.ecommerce.detail },
+            },
+          }
+          push(productClick)
+        })
+        .catch(error => console.error(error))
 
       if (!quickViewClicked) {
         push(data)
@@ -374,107 +416,200 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
       let discount: string | undefined
 
       if (!minusClicked) {
-        push({
-          ecommerce: {
-            add: {
-              products: items.map((sku: any) => {
-                if (words[words.length - 1] == 'p') {
-                  // Get discount
-                  const component = document.getElementsByClassName(
-                    'easycl-precio-cencosud-0-x-porcentajeCenco'
-                  )[0]
-                  if (component) {
-                    discount = component.textContent?.replace('-', '')
-                  } else {
-                    discount = '0%'
-                  }
-                } else {
-                  const difference = Math.abs(sku.price - sku.sellingPrice)
-                  discount = `${Math.round((difference / sku.price) * 100)}%`
-                }
+        const products = items.map((sku: any) => {
+          if (words[words.length - 1] == 'p') {
+            // Get discount
+            const component = document.getElementsByClassName(
+              'easycl-precio-cencosud-0-x-porcentajeCenco'
+            )[0]
+            if (component) {
+              discount = component.textContent?.replace('-', '')
+            } else {
+              discount = '0%'
+            }
+          } else {
+            const difference = Math.abs(sku.price - sku.sellingPrice)
+            discount = `${Math.round((difference / sku.price) * 100)}%`
+          }
 
-                return {
-                  brand: sku.brand,
-                  category: sku.category,
-                  id: sku.productRefId,
-                  name: sku.name,
-                  listPrice: sku.price / 100,
-                  price: sku.sellingPrice / 100,
-                  discount,
-                  quantity: plusClicked ? 1 : sku.quantity,
-                  variant: sku.variant,
-                }
-              }),
-            },
-            currencyCode: e.data.currency,
-          },
-          event: 'addToCart',
+          return client
+            .query({
+              variables: {
+                identifier: {
+                  field: 'refId',
+                  value: sku.productRefId,
+                },
+              },
+              query: query,
+            })
+            .then(result => {
+              const taxCode: any = result.data.product.taxCode
+              const grupo = GRUPO[taxCode]
+              const subRubro = SUB_RUBRO[taxCode.substring(0, 6)]
+              const rubro = RUBRO[taxCode.substring(0, 4)]
+              const seccion = SECCION[taxCode.substring(0, 2)]
+
+              return {
+                brand: sku.brand,
+                category: sku.category,
+                id: sku.skuId,
+                name: sku.name,
+                listPrice: sku.price / 100,
+                price: sku.sellingPrice / 100,
+                discount,
+                quantity: plusClicked ? 1 : sku.quantity,
+                variant: sku.variant,
+                taxCode,
+                grupo,
+                subRubro,
+                rubro,
+                seccion,
+              }
+            })
+            .catch(error => {
+              console.error(error)
+            })
         })
+
+        Promise.all(products).then(finalProducts => {
+          push({
+            ecommerce: {
+              add: {
+                products: finalProducts,
+              },
+              currencyCode: e.data.currency,
+            },
+            event: 'addToCart',
+          })
+        })
+
         plusClicked = false
         return
       } else {
-        push({
-          ecommerce: {
-            currencyCode: e.data.currency,
-            remove: {
-              products: items.map((sku: any) => {
-                if (words[words.length - 1] == 'p') {
-                  // Get discount
-                  const component = document.getElementsByClassName(
-                    'easycl-precio-cencosud-0-x-porcentajeCenco'
-                  )[0]
-                  if (component) {
-                    discount = component.textContent?.replace('-', '')
-                  } else {
-                    discount = '0%'
-                  }
-                } else {
-                  const difference = Math.abs(sku.price - sku.sellingPrice)
-                  discount = `${Math.round((difference / sku.price) * 100)}%`
-                }
+        const products = items.map((sku: any) => {
+          if (words[words.length - 1] == 'p') {
+            // Get discount
+            const component = document.getElementsByClassName(
+              'easycl-precio-cencosud-0-x-porcentajeCenco'
+            )[0]
+            if (component) {
+              discount = component.textContent?.replace('-', '')
+            } else {
+              discount = '0%'
+            }
+          } else {
+            const difference = Math.abs(sku.price - sku.sellingPrice)
+            discount = `${Math.round((difference / sku.price) * 100)}%`
+          }
 
-                return {
-                  brand: sku.brand,
-                  category: sku.category,
-                  id: sku.skuId,
-                  name: sku.name,
-                  listPrice: sku.price / 100,
-                  price: sku.sellingPrice / 100,
-                  discount,
-                  quantity: 1,
-                  variant: sku.variant,
-                }
-              }),
-            },
-          },
-          event: 'removeFromCart',
+          return client
+            .query({
+              variables: {
+                identifier: {
+                  field: 'refId',
+                  value: sku.productRefId,
+                },
+              },
+              query: query,
+            })
+            .then(result => {
+              const taxCode: any = result.data.product.taxCode
+              const grupo = GRUPO[taxCode]
+              const subRubro = SUB_RUBRO[taxCode.substring(0, 6)]
+              const rubro = RUBRO[taxCode.substring(0, 4)]
+              const seccion = SECCION[taxCode.substring(0, 2)]
+
+              return {
+                brand: sku.brand,
+                category: sku.category,
+                id: sku.skuId,
+                name: sku.name,
+                listPrice: sku.price / 100,
+                price: sku.sellingPrice / 100,
+                discount,
+                quantity: plusClicked ? 1 : sku.quantity,
+                variant: sku.variant,
+                taxCode,
+                grupo,
+                subRubro,
+                rubro,
+                seccion,
+              }
+            })
+            .catch(error => {
+              console.error(error)
+            })
         })
+
+        Promise.all(products).then(finalProducts => {
+          push({
+            ecommerce: {
+              currencyCode: e.data.currency,
+              remove: {
+                products: finalProducts,
+              },
+            },
+            event: 'removeFromCart',
+          })
+        })
+
+        minusClicked = false
+        return
       }
-
-      minusClicked = false
-
-      return
     }
 
     case 'vtex:removeFromCart': {
       const { items } = e.data
 
-      push({
-        ecommerce: {
-          currencyCode: e.data.currency,
-          remove: {
-            products: items.map((sku: any) => ({
+      const products = items.map((sku: any) => {
+        return client
+          .query({
+            variables: {
+              identifier: {
+                field: 'refId',
+                value: sku.productRefId,
+              },
+            },
+            query: query,
+          })
+          .then(result => {
+            const taxCode: any = result.data.product.taxCode
+            const grupo = GRUPO[taxCode]
+            const subRubro = SUB_RUBRO[taxCode.substring(0, 6)]
+            const rubro = RUBRO[taxCode.substring(0, 4)]
+            const seccion = SECCION[taxCode.substring(0, 2)]
+
+            return {
               brand: sku.brand,
-              id: sku.skuId,
               category: sku.category,
+              id: sku.skuId,
               name: sku.name,
-              price: `${sku.price / 100}`,
-              quantity: sku.quantity,
+              listPrice: sku.price / 100,
+              price: sku.sellingPrice / 100,
+              quantity: plusClicked ? 1 : sku.quantity,
               variant: sku.variant,
-            })),
+              taxCode,
+              grupo,
+              subRubro,
+              rubro,
+              seccion,
+            }
+          })
+          .catch(error => {
+            console.error(error)
+          })
+      })
+
+      Promise.all(products).then(finalProducts => {
+        push({
+          ecommerce: {
+            currencyCode: e.data.currency,
+            remove: {
+              products: finalProducts,
+            },
           },
-        },
-        event: 'removeFromCart',
+          event: 'removeFromCart',
+        })
       })
 
       return
@@ -510,30 +645,6 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
 
     case 'vtex:productImpression': {
       const { currency, impressions, product, position } = e.data
-      console.log('Adding taxCode to impressions here***********')
-
-      /*
-      For each product, query the taxCode
-      */
-      const client: ApolloClient<NormalizedCacheObject> = new ApolloClient({
-        cache: new InMemoryCache(),
-        queryDeduplication: true,
-      })
-
-      client
-        .query({
-          query: gql`
-            {
-              product(identifier: { field: id, value: 2 }) {
-                id
-                name
-                taxCode
-              }
-            }
-          `,
-          context: { provider: 'vtex.catalog-graphql' },
-        })
-        .then(result => console.log(result))
 
       const termSearched = window.location.pathname.split('/')[1]
       let oldImpresionFormat: Record<string, any> | null = null
@@ -570,6 +681,32 @@ export function sendEnhancedEcommerceEvents(e: PixelMessage, pathname: any) {
           return item
         }
       )
+
+      /*
+      For each product, query the taxCode
+      */
+      impressionsWithList.map(function(item: any) {
+        client
+          .query({
+            variables: {
+              identifier: {
+                field: 'refId',
+                value: item.id,
+              },
+            },
+            query: query,
+          })
+          .then(result => {
+            const taxCode: any = result.data.product.taxCode
+            item.taxCode = result.data.product.taxCode
+            item.grupo = GRUPO[taxCode]
+            item.subRubro = SUB_RUBRO[taxCode.substring(0, 6)]
+            item.rubro = RUBRO[taxCode.substring(0, 4)]
+            item.seccion = SECCION[taxCode.substring(0, 2)]
+            return item
+          })
+          .catch(error => console.error(error))
+      })
 
       push({
         event: 'productImpression',
