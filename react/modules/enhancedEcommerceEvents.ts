@@ -85,7 +85,7 @@ observer.observe(document, { childList: true, subtree: true })
 
 const client: ApolloClient<NormalizedCacheObject> = new ApolloClient({
   cache: new InMemoryCache(),
-  uri: '/_v/private/easycl.google-tag-manager-easy@4.1.9/graphiql/v1',
+  uri: '/_v/private/admin-graphql-ide/v0/vtex.catalog-graphql@1.96.0',
 })
 
 const query = gql`
