@@ -1,0 +1,7 @@
+query productTaxCode($id: String) {
+  product(identifier: { field: id, value: "2" })
+    @context(provider: "vtex.catalog-graphql") {
+    taxCode
+    name
+  }
+}
