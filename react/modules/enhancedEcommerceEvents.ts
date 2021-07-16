@@ -85,7 +85,8 @@ observer.observe(document, { childList: true, subtree: true })
 
 const client: ApolloClient<NormalizedCacheObject> = new ApolloClient({
   cache: new InMemoryCache(),
-  uri: '/_v/private/admin-graphql-ide/v0/vtex.catalog-graphql@1.96.0',
+  uri:
+    'https://easycl.myvtex.com/_v/private/admin-graphql-ide/v0/vtex.catalog-graphql@1.96.0',
 })
 
 const query = gql`
